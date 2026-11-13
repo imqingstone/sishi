@@ -1,7 +1,7 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const E = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-const {DAY_MASTER, TEN_GOD, ELEMENT_INFO, TERMS} = window.SishiTexts;
+const {REL_INFO, PILLAR_AREA, SHENSHA_INFO, DAY_MASTER, TEN_GOD, ELEMENT_INFO, TERMS} = window.SishiTexts;
 const ZODIAC = '鼠牛虎兔龍蛇馬羊猴雞狗豬';
 const p2 = n => String(n).padStart(2, '0');
 let current = null, selDecade = null, selYear = null;
@@ -110,7 +110,23 @@ function render(){
     '<tr><th scope="row">天干</th>' + P.map((p, i) => td(i, '<span class="big ' + p.stemEl + '" aria-label="' + p.stem + '，' + p.stemEl + '">' + p.stem + '</span>')).join('') + '</tr>' +
     '<tr><th scope="row">地支</th>' + P.map((p, i) => td(i, '<span class="big ' + p.branchEl + '" aria-label="' + p.branch + '，' + p.branchEl + (c.kong.includes(p.branch) && i !== 2 ? '，空亡' : '') + '">' + p.branch + '</span>' + (c.kong.includes(p.branch) && i !== 2 ? '<span class="kong" aria-hidden="true">空</span>' : ''))).join('') + '</tr>' +
     '<tr><th scope="row">藏干</th>' + P.map((p, i) => td(i, p.hidden.map(h => '<span class="hid">' + elSpan(h.stem, h.el) + '<small>' + h.god + '</small></span>').join(''))).join('') + '</tr>' +
-    '<tr><th scope="row">納音</th>' + P.map((p, i) => td(i, '<span class="ny">' + p.nayin + '</span>')).join('') + '</tr></tbody>';
+    '<tr><th scope="row">納音</th>' + P.map((p, i) => td(i, '<span class="ny">' + p.nayin + '</span>')).join('') + '</tr>' +
+    '<tr><th scope="row">神煞</th>' + COLS.map(([k], i) => td(i, c.shensha.filter(x => x.pillar === k).map(x => '<span class="ss ss-' + SHENSHA_INFO[x.name][0] + '">' + x.name.replace(/貴人$/, '') + '</span>').join('') || '<span class="ny">—</span>')).join('') + '</tr></tbody>';
+
+  const PN = {year: '年', month: '月', day: '日', hour: '時'};
+  const KIND = {he: '合', chong: '沖', xing: '刑', hai: '害'};
+  $('#rels').innerHTML = '<h3>合沖刑害</h3>' + (c.relations.length ? '<ul class="gods">' + c.relations.map(r =>
+    '<li><span class="rk rk-' + r.kind + '">' + KIND[r.kind] + '</span><b>' + r.text + '</b><small>' + r.type + '・' + r.pillars.map(k => PN[k] + '柱').join('、') + '</small><p>' + REL_INFO[r.type] + '</p></li>').join('') + '</ul>'
+    : '<p class="muted">四柱之間沒有明顯的合、沖、刑、害，彼此的關係比較單純。</p>') +
+    '<p class="muted">' + COLS.map(([k]) => PILLAR_AREA[k]).join('；') + '。</p>';
+
+  const byName = {};
+  for (const x of c.shensha) (byName[x.name] = byName[x.name] || []).push(x);
+  const sOrder = Object.keys(SHENSHA_INFO);
+  $('#stars').innerHTML = '<h3>神煞</h3>' + (c.shensha.length ? '<ul class="gods">' + Object.keys(byName).sort((x, y) => sOrder.indexOf(x) - sOrder.indexOf(y)).map(n =>
+    '<li><b>' + n + '</b><small>在' + [...new Set(byName[n].map(x => PN[x.pillar] + '柱'))].join('、') + '・依' + [...new Set(byName[n].map(x => x.by))].join('、') + '</small><p>' + SHENSHA_INFO[n][1] + '</p></li>').join('') + '</ul>'
+    : '<p class="muted">這張命盤沒有出現這裡列出的十五種神煞。</p>') +
+    '<p class="muted">各派採用的神煞與算法不完全相同，當作參考就好。</p>';
 
   const [nick, text] = DAY_MASTER[c.dayStem];
   $('#dm').innerHTML = '<h3>日主</h3><div class="dm-head"><span class="dm-char ' + c.dayEl + '">' + c.dayStem + '</span><span>' + (Sishi.STEMS.indexOf(c.dayStem) % 2 ? '陰' : '陽') + c.dayEl + '・' + nick + '</span></div>' +
