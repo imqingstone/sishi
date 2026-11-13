@@ -75,6 +75,8 @@ button.primary{background:var(--brand);color:#fff;width:100%;font-size:17px;lett
 .gods li{border-top:1px solid var(--line);padding:10px 0}.gods li:first-child{border-top:0;padding-top:0}
 .gods b{color:var(--brand)}.gods small{color:var(--mute);margin-left:6px}.gods p{margin:4px 0 0}
 .dmg{background:var(--soft);border-radius:8px;padding:8px 10px;margin:8px 0 0}.dmg b{display:block;font-size:14px;margin-bottom:2px;color:var(--brand)}
+.summary-box{border-color:var(--brand);border-width:2px}
+.summary-box h4{margin:12px 0 2px;font-size:15px;color:var(--brand)}.summary-box h4:first-of-type{margin-top:4px}.summary-box p{margin:0}.summary-box p.muted{margin-top:12px}
 /* 大運、流年 */
 .luck{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(64px,1fr);gap:6px;padding:4px 2px 8px}
 .luck button,.flow button{display:flex;flex-direction:column;align-items:center;gap:0;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:6px 2px;min-height:0;line-height:1.35}

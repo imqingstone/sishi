@@ -93,6 +93,13 @@ assert.ok(fr(c49, 2024).includes('chart:三合申子辰三合水局') && fr(c49,
 assert.ok(fr(c49, 2012).includes('decade:天干五合丁壬合木'));   // 丁卯大運
 assert.ok(!fr(c49, 2029).some(x => x.startsWith('chart:')));
 
+// 白話總結
+const SUM = require('../docs/summary.js'), DMG2 = require('../docs/dmgods.js');
+const s90 = SUM.summarize(c90, texts, DMG2, 2026);
+assert.deepStrictEqual(s90.map(x => x[0]), ['你是什麼樣的人', '五行的樣子', '你的優勢', '可以留意的地方', '現在這個階段']);
+assert.ok(s90[1][1].includes('火的力量明顯') && s90[1][1].includes('沒有土'));
+assert.ok(s90[2][1].includes('七殺') && s90[2][1].includes('偏印'));
+assert.ok(s90[4][1].includes('戊寅大運') && s90[4][1].includes('丙午年') && s90[4][1].includes('合、沖、刑'));
 // 隨機命盤：四柱合法、日柱依日數循環、五行共八個、大運連續
 let n = 0;
 for (let k = 0; k < 5000; k++) {
@@ -106,6 +113,7 @@ for (let k = 0; k < 5000; k++) {
   for (const r of c.relations) assert.ok(texts.REL_INFO[r.type]);
   for (const x of c.shensha) assert.ok(texts.SHENSHA_INFO[x.name]);
   for (const r of S.flowYear(c, c.luck.decades[2].fromYear + k % 10).relations) assert.ok(texts.REL_INFO[r.type]);
+  if (k % 50 === 0) for (const [t, s] of SUM.summarize(c, texts, DMG2, 2026)) { assert.ok(s.length > 10 && !/undefined|NaN/.test(s), t); for (const w of ['不必','真正','值得','未必']) assert.ok(!s.includes(w)); }
   n++;
 }
 assert.throws(() => S.chart({y: 1900, m: 1, d: 15, hour: 8, minute: 0, gender: 'M'}));
@@ -119,4 +127,4 @@ for (const s of S.STEMS) assert.ok(texts.DAY_MASTER[s]);
 for (const g of ['比肩','劫財','食神','傷官','偏財','正財','七殺','正官','偏印','正印']) assert.ok(texts.TEN_GOD[g]);
 for (const e of S.ELEMENTS) assert.ok(texts.ELEMENT_INFO[e]);
 
-console.log('PASS: solar terms vs published times; known charts; 立春 boundary; late 子; ten gods; luck pillars; flow years; ' + n + ' random charts; true solar time; 合沖刑害; 神煞; 100 day-master readings; flow-year relations; texts.');
+console.log('PASS: solar terms vs published times; known charts; 立春 boundary; late 子; ten gods; luck pillars; flow years; ' + n + ' random charts; true solar time; 合沖刑害; 神煞; 100 day-master readings; flow-year relations; summary; texts.');
