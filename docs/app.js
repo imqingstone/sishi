@@ -136,6 +136,8 @@ function render(){
     : '<p class="muted">這張命盤沒有出現這裡列出的十五種神煞。</p>') +
     '<p class="muted">各派採用的神煞與算法不完全相同，當作參考就好。</p>';
 
+  $('#summary-box').innerHTML = '<h3>白話總結</h3>' + SishiSummary.summarize(c, window.SishiTexts, DM_GODS, new Date().getFullYear())
+    .map(([t, s]) => '<h4>' + t + '</h4><p>' + s + '</p>').join('') + '<p class="muted">由命盤自動整理，當作認識自己的參考就好；各項細節可以看下方的說明。</p>';
   const [nick, text] = DAY_MASTER[c.dayStem];
   $('#dm').innerHTML = '<h3>日主</h3><div class="dm-head"><span class="dm-char ' + c.dayEl + '">' + c.dayStem + '</span><span>' + (Sishi.STEMS.indexOf(c.dayStem) % 2 ? '陰' : '陽') + c.dayEl + '・' + nick + '</span></div>' +
     '<p>' + text + '</p><p class="muted">日柱空亡：' + c.kong.join('、') + '。</p>';
