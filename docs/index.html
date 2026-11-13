@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f4f2ec"><meta name="description" content="四時，八字排盤，附十神、藏干、五行、大運流年與名詞說明。生日資料只保存在你的瀏覽器。"><title>四時・八字排盤</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<a class="skip" href="#main">跳到主要內容</a>
+<header><div class="bar"><span class="brand"><b aria-hidden="true">◈</b> 四時</span><span class="tag">八字排盤</span></div></header>
+<main id="main" tabindex="-1">
+<section class="intro"><h1>四時</h1><p>排出你的八字命盤，看看日主、十神、五行，以及每十年的大運。</p></section>
+
+<form id="form" class="box" novalidate>
+<h2>出生資料</h2>
+<label>名字或暱稱（選填，儲存時使用）<input id="name" maxlength="20" autocomplete="off"></label>
+<div class="row">
+<label>國曆生日<input id="date" type="date" min="1900-02-05" max="2100-12-31" required></label>
+<label>出生時間<input id="time" type="time" required></label>
+</div>
+<fieldset class="pick"><legend>性別</legend><label><input type="radio" name="gender" value="F" required>女</label><label><input type="radio" name="gender" value="M">男</label></fieldset>
+<label class="check"><input id="taiwan" type="checkbox" checked>在台灣出生（自動校正當年的夏令時間與日治時期時間）</label>
+<details class="adv"><summary>進階設定</summary>
+<fieldset class="solar"><legend>真太陽時</legend>
+<label class="check"><input id="solar" type="checkbox">以真太陽時排日柱與時柱（依出生地經度與季節校正時間）</label>
+<div id="solar-opts" class="solar-opts" hidden>
+<label>出生地<select id="place"></select></label>
+<label id="lon-box" hidden>東經（度）<input id="lon" type="number" inputmode="decimal" step="0.01" min="-180" max="180" placeholder="例如 121.56"></label>
+<p class="muted">出生時間以台灣標準時間（UTC+8，東經 120 度）為準。</p>
+</div>
+</fieldset>
+<fieldset class="pick"><legend>晚子時（23:00 以後出生）的日柱</legend><label><input type="radio" name="lateZi" value="next" checked>算作隔天</label><label><input type="radio" name="lateZi" value="same">算作當天</label></fieldset>
+</details>
+<p id="form-error" class="error" role="alert"></p>
+<button class="primary" type="submit">排盤</button>
+</form>
+
+<section id="saved-box" class="box" hidden><h2>已儲存的命盤</h2><ul id="saved"></ul><p class="muted">儲存在這個瀏覽器裡，不會上傳。清除瀏覽器資料會一併刪除。</p></section>
+
+<section id="result" hidden aria-labelledby="result-title">
+<div class="result-head"><h2 id="result-title">八字</h2><button id="save" type="button">儲存這張命盤</button></div>
+<p id="adjust-note" class="note" hidden></p>
+<p id="summary" class="summary"></p>
+<div class="box pillars-box"><div class="scroll"><table id="pillars" class="pillars"></table></div></div>
+<section id="dm" class="box"></section>
+<section id="elements" class="box"></section>
+<section id="gods" class="box"></section>
+<section class="box luck-box"><h3>大運</h3><p id="luck-start" class="muted"></p><div class="scroll"><div id="luck" class="luck" role="group" aria-label="大運，點選查看這十年的流年"></div></div>
+<h3 id="flow-title" class="flow-title">流年</h3><div id="flow" class="flow"></div><p id="flow-detail" class="flow-detail" aria-live="polite"></p></section>
+<details class="box legend"><summary>名詞說明</summary><dl id="terms"></dl></details>
+</section>
+</main>
+<footer><p>命盤是認識自己的一種角度，不預測吉凶，重要決定請自己作主。</p><p>節氣依天文計算，涵蓋 1900–2100 年；換年、換月以節氣時刻為準。</p><small id="usage" class="usage" hidden></small><small class="copyright">© 2026 四時・內容為原創，未經同意請勿轉載</small></footer>
+<div id="status" class="toast" role="status" aria-live="polite"></div>
+<noscript>請啟用 JavaScript 才能排盤。</noscript>
+<script src="terms.js"></script><script src="engine.js"></script><script src="texts.js"></script><script src="app.js"></script>
+<script data-goatcounter="https://imqingstone.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body></html>
