@@ -2,6 +2,7 @@
 const $ = s => document.querySelector(s);
 const E = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const {REL_INFO, PILLAR_AREA, SHENSHA_INFO, DAY_MASTER, TEN_GOD, ELEMENT_INFO, TERMS} = window.SishiTexts;
+const DM_GODS = window.SishiDmGods || {};
 const ZODIAC = '鼠牛虎兔龍蛇馬羊猴雞狗豬';
 const p2 = n => String(n).padStart(2, '0');
 let current = null, selDecade = null, selYear = null;
@@ -94,6 +95,13 @@ function compute(v){
 const COLS = [['year', '年柱'], ['month', '月柱'], ['day', '日柱'], ['hour', '時柱']];
 const elSpan = (ch, el) => '<span class="' + el + '">' + ch + '</span>';
 
+function dmBox(c, g){
+  const r = (DM_GODS[c.dayStem] || {})[g];
+  if (!r) return '';
+  const el = Sishi.ELEMENTS[Math.floor(Sishi.STEMS.indexOf(r[0]) / 2)];
+  return '<p class="dmg"><b>' + c.dayStem + c.dayEl + '日主的' + g + '：<span class="' + el + '">' + r[0] + el + '</span></b>' + r[1] + '</p>';
+}
+
 function render(){
   const {c, notes, v} = current;
   $('#result').hidden = false;
@@ -146,7 +154,7 @@ function render(){
   }
   const order = Object.keys(TEN_GOD);
   $('#gods').innerHTML = '<h3>命盤中的十神</h3><ul class="gods">' + Object.entries(gods).sort((a, b) => b[1] - a[1] || order.indexOf(a[0]) - order.indexOf(b[0]))
-    .map(([g, n]) => '<li><b>' + g + '</b><small>出現 ' + n + ' 次（含藏干）</small><p>' + TEN_GOD[g] + '</p></li>').join('') + '</ul>';
+    .map(([g, n]) => '<li><b>' + g + '</b><small>出現 ' + n + ' 次（含藏干）</small><p>' + TEN_GOD[g] + '</p>' + dmBox(c, g) + '</li>').join('') + '</ul>';
 
   const L = c.luck;
   $('#luck-start').textContent = (c.forward ? '順推' : '逆推') + '。出生後 ' + L.years + ' 年' + (L.months ? ' ' + L.months + ' 個月' : '') + '起運，約在 ' + L.start.y + ' 年 ' + L.start.m + ' 月交第一步大運。下方年齡為虛歲，點選大運可以看這十年的流年。';
@@ -174,7 +182,7 @@ function showYear(Y){
   if (Y == null) { $('#flow-detail').textContent = ''; return; }
   const f = Sishi.flowYear(current.c, Y);
   const hid = f.hidden.map(h => h.stem + '（' + h.god + '）').join('、');
-  $('#flow-detail').textContent = Y + ' ' + f.text + '年（虛歲 ' + f.age + '）：流年天干「' + f.stem + '」是你的' + f.god + '，' + TEN_GOD[f.god] + '地支「' + f.branch + '」藏 ' + hid + '。';
+  $('#flow-detail').textContent = Y + ' ' + f.text + '年（虛歲 ' + f.age + '）：流年天干「' + f.stem + '」是你的' + f.god + '，' + TEN_GOD[f.god] + ((DM_GODS[current.c.dayStem] || {})[f.god] ? DM_GODS[current.c.dayStem][f.god][1] : '') + '地支「' + f.branch + '」藏 ' + hid + '。';
 }
 
 function renderSaved(){

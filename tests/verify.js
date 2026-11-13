@@ -76,6 +76,14 @@ assert.ok(SH([0, 0, 0, 0], [0, 6, 6, 5]).includes('文昌貴人@hour') && SH([0,
 for (const r of ['天干五合','天干相沖','六合','三合','半合','三會','六沖','相刑','自刑','六害']) assert.ok(texts.REL_INFO[r]);
 for (const n of ['天乙貴人','天德貴人','月德貴人','文昌貴人','祿神','將星','紅鸞','天喜','桃花','驛馬','華蓋','羊刃','魁罡','孤辰','寡宿']) assert.ok(texts.SHENSHA_INFO[n]);
 
+// 日主配十神：一百段齊全，對應的天干與十神相符
+const DMG = require('../docs/dmgods.js');
+for (const [di, d] of S.STEMS.entries()) for (const g of Object.keys(texts.TEN_GOD)) {
+  const [o, t] = DMG[d][g];
+  assert.strictEqual(S.tenGod(di, S.STEMS.indexOf(o)), g, d + g);
+  assert.ok(t.length > 25 && t.startsWith(o), d + g);
+}
+
 // 隨機命盤：四柱合法、日柱依日數循環、五行共八個、大運連續
 let n = 0;
 for (let k = 0; k < 5000; k++) {
@@ -101,4 +109,4 @@ for (const s of S.STEMS) assert.ok(texts.DAY_MASTER[s]);
 for (const g of ['比肩','劫財','食神','傷官','偏財','正財','七殺','正官','偏印','正印']) assert.ok(texts.TEN_GOD[g]);
 for (const e of S.ELEMENTS) assert.ok(texts.ELEMENT_INFO[e]);
 
-console.log('PASS: solar terms vs published times; known charts; 立春 boundary; late 子; ten gods; luck pillars; flow years; ' + n + ' random charts; true solar time; 合沖刑害; 神煞; texts.');
+console.log('PASS: solar terms vs published times; known charts; 立春 boundary; late 子; ten gods; luck pillars; flow years; ' + n + ' random charts; true solar time; 合沖刑害; 神煞; 100 day-master readings; texts.');
