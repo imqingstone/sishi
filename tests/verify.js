@@ -84,6 +84,15 @@ for (const [di, d] of S.STEMS.entries()) for (const g of Object.keys(texts.TEN_G
   assert.ok(t.length > 25 && t.startsWith(o), d + g);
 }
 
+// 流年與命盤的合沖刑害
+const fr = (c, Y) => S.flowYear(c, Y).relations.map(r => r.with + ':' + r.type + r.text);
+assert.deepStrictEqual(fr(c90, 2032), ['year:六沖子午沖', 'month:六沖子午沖', 'hour:六沖子午沖']);   // 壬子年沖三個午
+assert.ok(fr(c90, 2026).includes('day:天干五合丙辛合水') && fr(c90, 2026).includes('month:天干相沖丙壬沖'));
+assert.ok(fr(c90, 2034).includes('day:六合寅亥合木'));
+assert.ok(fr(c49, 2024).includes('chart:三合申子辰三合水局') && fr(c49, 2024).includes('year:天干五合甲己合土'));   // 辰年補齊申子辰
+assert.ok(fr(c49, 2012).includes('decade:天干五合丁壬合木'));   // 丁卯大運
+assert.ok(!fr(c49, 2029).some(x => x.startsWith('chart:')));
+
 // 隨機命盤：四柱合法、日柱依日數循環、五行共八個、大運連續
 let n = 0;
 for (let k = 0; k < 5000; k++) {
@@ -96,6 +105,7 @@ for (let k = 0; k < 5000; k++) {
   assert.ok(c.luck.years >= 0 && c.luck.years <= 10);
   for (const r of c.relations) assert.ok(texts.REL_INFO[r.type]);
   for (const x of c.shensha) assert.ok(texts.SHENSHA_INFO[x.name]);
+  for (const r of S.flowYear(c, c.luck.decades[2].fromYear + k % 10).relations) assert.ok(texts.REL_INFO[r.type]);
   n++;
 }
 assert.throws(() => S.chart({y: 1900, m: 1, d: 15, hour: 8, minute: 0, gender: 'M'}));
@@ -109,4 +119,4 @@ for (const s of S.STEMS) assert.ok(texts.DAY_MASTER[s]);
 for (const g of ['比肩','劫財','食神','傷官','偏財','正財','七殺','正官','偏印','正印']) assert.ok(texts.TEN_GOD[g]);
 for (const e of S.ELEMENTS) assert.ok(texts.ELEMENT_INFO[e]);
 
-console.log('PASS: solar terms vs published times; known charts; 立春 boundary; late 子; ten gods; luck pillars; flow years; ' + n + ' random charts; true solar time; 合沖刑害; 神煞; 100 day-master readings; texts.');
+console.log('PASS: solar terms vs published times; known charts; 立春 boundary; late 子; ten gods; luck pillars; flow years; ' + n + ' random charts; true solar time; 合沖刑害; 神煞; 100 day-master readings; flow-year relations; texts.');
