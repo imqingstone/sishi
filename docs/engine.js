@@ -55,22 +55,25 @@ function trueSolar(t, lon){
 const KEYS = ['year', 'month', 'day', 'hour'];
 const SANHE = [[8, 0, 4, '水'], [11, 3, 7, '木'], [2, 6, 10, '火'], [5, 9, 1, '金']];   // 生、旺、墓
 const SANHUI = [[2, 3, 4, '木'], [5, 6, 7, '火'], [8, 9, 10, '金'], [11, 0, 1, '水']];
+// 兩柱之間的關係（天干五合、相沖；地支六合、六沖、六害、相刑、自刑）
+function pairRelations(a, x, b, y){
+  const out = [], lo = Math.min(a, b), hi = Math.max(a, b);
+  const p = BRANCHES[x] + BRANCHES[y], q = BRANCHES[Math.min(x, y)] + BRANCHES[Math.max(x, y)];   // q 為慣用順序
+  if (a !== b && a % 5 === b % 5) out.push(['天干五合', 'he', STEMS[lo] + STEMS[hi] + '合' + ['土', '金', '水', '木', '火'][lo]]);
+  if (hi - lo === 6) out.push(['天干相沖', 'chong', STEMS[lo] + STEMS[hi] + '沖']);
+  if ((x + y) % 12 === 1) out.push(['六合', 'he', q + '合' + ({'01': '土', '211': '木', '310': '火', '49': '金', '58': '水'}[Math.min(x, y) + '' + Math.max(x, y)] || '')]);
+  if (Math.abs(x - y) === 6) out.push(['六沖', 'chong', q + '沖']);
+  if ((x + y) % 12 === 7) out.push(['六害', 'hai', q + '害']);
+  if (x !== y && [[2, 5, 8], [1, 10, 7]].some(g => g.includes(x) && g.includes(y))) out.push(['相刑', 'xing', p + '刑']);
+  if ((x === 0 && y === 3) || (x === 3 && y === 0)) out.push(['相刑', 'xing', p + '刑']);
+  if (x === y && [4, 6, 9, 11].includes(x)) out.push(['自刑', 'xing', p + '自刑']);
+  return out;
+}
 function relations(stems, branches){
   const out = [];
   const add = (type, kind, idx, text) => out.push({type, kind, pillars: idx.map(i => KEYS[i]), text});
-  for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) {
-    const a = stems[i], b = stems[j], lo = Math.min(a, b), hi = Math.max(a, b);
-    if (a !== b && a % 5 === b % 5) add('天干五合', 'he', [i, j], STEMS[lo] + STEMS[hi] + '合' + ['土', '金', '水', '木', '火'][lo]);
-    if (hi - lo === 6) add('天干相沖', 'chong', [i, j], STEMS[lo] + STEMS[hi] + '沖');
-    const x = branches[i], y = branches[j], p = BRANCHES[x] + BRANCHES[y];
-    const q = BRANCHES[Math.min(x, y)] + BRANCHES[Math.max(x, y)];   // 慣用順序
-    if ((x + y) % 12 === 1) add('六合', 'he', [i, j], q + '合' + ({'01': '土', '211': '木', '310': '火', '49': '金', '58': '水'}[Math.min(x, y) + '' + Math.max(x, y)] || ''));
-    if (Math.abs(x - y) === 6) add('六沖', 'chong', [i, j], q + '沖');
-    if ((x + y) % 12 === 7) add('六害', 'hai', [i, j], q + '害');
-    if (x !== y && [[2, 5, 8], [1, 10, 7]].some(g => g.includes(x) && g.includes(y))) add('相刑', 'xing', [i, j], p + '刑');
-    if ((x === 0 && y === 3) || (x === 3 && y === 0)) add('相刑', 'xing', [i, j], p + '刑');
-    if (x === y && [4, 6, 9, 11].includes(x)) add('自刑', 'xing', [i, j], p + '自刑');
-  }
+  for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++)
+    for (const [type, kind, text] of pairRelations(stems[i], branches[i], stems[j], branches[j])) add(type, kind, [i, j], text);
   for (const [s, m, e, el] of SANHE) {
     const has = [s, m, e].map(b => branches.includes(b));
     if (has.every(Boolean)) add('三合', 'he', [0, 1, 2, 3].filter(i => [s, m, e].includes(branches[i])), BRANCHES[s] + BRANCHES[m] + BRANCHES[e] + '三合' + el + '局');
@@ -211,9 +214,22 @@ function chart(input){
 function flowYear(c, Y){
   const i = mod(Y - 4, 60), ds = STEMS.indexOf(c.dayStem);
   const decade = c.luck.decades.find(dc => Y >= dc.fromYear && Y <= dc.toYear) || null;
-  return {...pillar(i, ds), year: Y, age: Y - c.year + 1, decade};
+  // 流年與四柱、當時大運之間的合沖刑害；流年地支補齊命盤的三合或三會時也列出
+  const fs = i % 10, fb = i % 12, rel = [];
+  const targets = KEYS.map(k => [k, c.pillars[k]]);
+  if (decade) targets.push(['decade', decade]);
+  for (const [k, p] of targets)
+    for (const [type, kind, text] of pairRelations(fs, fb, p.stemIndex, p.branchIndex)) rel.push({type, kind, text, with: k});
+  const cb = KEYS.map(k => c.pillars[k].branchIndex);
+  for (const [group, type, suffix] of [[SANHE, '三合', '局'], [SANHUI, '三會', '方']])
+    for (const g of group) {
+      const three = g.slice(0, 3), rest = three.filter(z => z !== fb);
+      if (three.includes(fb) && rest.length === 2 && rest.every(z => cb.includes(z)))
+        rel.push({type, kind: 'he', text: three.map(z => BRANCHES[z]).join('') + type + g[3] + suffix, with: 'chart'});
+    }
+  return {...pillar(i, ds), year: Y, age: Y - c.year + 1, decade, relations: rel};
 }
 
-const api = {relations, shensha, STEMS, BRANCHES, ELEMENTS, HIDDEN, NAYIN, tenGod, chart, flowYear, trueSolar, equationOfTime, hourBranch, gz, FIRST, LAST, jieList};
+const api = {pairRelations, relations, shensha, STEMS, BRANCHES, ELEMENTS, HIDDEN, NAYIN, tenGod, chart, flowYear, trueSolar, equationOfTime, hourBranch, gz, FIRST, LAST, jieList};
 if (typeof module !== 'undefined') module.exports = api; else g.Sishi = api;
 })(this);

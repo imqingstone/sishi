@@ -92,6 +92,8 @@ function compute(v){
 }
 
 // ---------- 畫面 ----------
+const PN = {year: '年', month: '月', day: '日', hour: '時'};
+const KIND = {he: '合', chong: '沖', xing: '刑', hai: '害'};
 const COLS = [['year', '年柱'], ['month', '月柱'], ['day', '日柱'], ['hour', '時柱']];
 const elSpan = (ch, el) => '<span class="' + el + '">' + ch + '</span>';
 
@@ -121,8 +123,6 @@ function render(){
     '<tr><th scope="row">納音</th>' + P.map((p, i) => td(i, '<span class="ny">' + p.nayin + '</span>')).join('') + '</tr>' +
     '<tr><th scope="row">神煞</th>' + COLS.map(([k], i) => td(i, c.shensha.filter(x => x.pillar === k).map(x => '<span class="ss ss-' + SHENSHA_INFO[x.name][0] + '">' + x.name.replace(/貴人$/, '') + '</span>').join('') || '<span class="ny">—</span>')).join('') + '</tr></tbody>';
 
-  const PN = {year: '年', month: '月', day: '日', hour: '時'};
-  const KIND = {he: '合', chong: '沖', xing: '刑', hai: '害'};
   $('#rels').innerHTML = '<h3>合沖刑害</h3>' + (c.relations.length ? '<ul class="gods">' + c.relations.map(r =>
     '<li><span class="rk rk-' + r.kind + '">' + KIND[r.kind] + '</span><b>' + r.text + '</b><small>' + r.type + '・' + r.pillars.map(k => PN[k] + '柱').join('、') + '</small><p>' + REL_INFO[r.type] + '</p></li>').join('') + '</ul>'
     : '<p class="muted">四柱之間沒有明顯的合、沖、刑、害，彼此的關係比較單純。</p>') +
@@ -171,7 +171,7 @@ function renderFlow(){
   $('#flow-title').textContent = '流年（' + dc.text + '大運，' + dc.fromYear + '–' + dc.toYear + '）';
   $('#flow').innerHTML = Array.from({length: 10}, (_, k) => {
     const f = Sishi.flowYear(c, dc.fromYear + k);
-    return '<button type="button" data-y="' + f.year + '" class="' + (f.year === now ? 'now' : '') + '" aria-pressed="' + (f.year === selYear) + '" aria-label="' + f.year + ' 年，' + f.text + '，虛歲 ' + f.age + '，' + f.god + (f.year === now ? '，今年' : '') + '"><span class="age">' + f.year + '</span><span class="gz">' + elSpan(f.stem, f.stemEl) + elSpan(f.branch, f.branchEl) + '</span><span class="g">' + f.god + '</span></button>';
+    return '<button type="button" data-y="' + f.year + '" class="' + (f.year === now ? 'now' : '') + '" aria-pressed="' + (f.year === selYear) + '" aria-label="' + f.year + ' 年，' + f.text + '，虛歲 ' + f.age + '，' + f.god + (f.year === now ? '，今年' : '') + (f.relations.length ? '，與命盤有' + ['he', 'chong', 'xing', 'hai'].filter(k => f.relations.some(r => r.kind === k)).map(k => KIND[k]).join('、') : '') + '"><span class="age">' + f.year + '</span><span class="gz">' + elSpan(f.stem, f.stemEl) + elSpan(f.branch, f.branchEl) + '</span><span class="g">' + f.god + '</span><span class="fk" aria-hidden="true">' + ['he', 'chong', 'xing', 'hai'].filter(k => f.relations.some(r => r.kind === k)).map(k => '<i class="rk-' + k + '">' + KIND[k] + '</i>').join('') + '</span></button>';
   }).join('');
   showYear(selYear != null && selYear >= dc.fromYear && selYear <= dc.toYear ? selYear : null);
 }
@@ -179,10 +179,17 @@ function renderFlow(){
 function showYear(Y){
   selYear = Y;
   document.querySelectorAll('#flow button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.y === Y)));
-  if (Y == null) { $('#flow-detail').textContent = ''; return; }
-  const f = Sishi.flowYear(current.c, Y);
+  if (Y == null) { $('#flow-detail').innerHTML = ''; return; }
+  const c = current.c, f = Sishi.flowYear(c, Y);
   const hid = f.hidden.map(h => h.stem + '（' + h.god + '）').join('、');
-  $('#flow-detail').textContent = Y + ' ' + f.text + '年（虛歲 ' + f.age + '）：流年天干「' + f.stem + '」是你的' + f.god + '，' + TEN_GOD[f.god] + ((DM_GODS[current.c.dayStem] || {})[f.god] ? DM_GODS[current.c.dayStem][f.god][1] : '') + '地支「' + f.branch + '」藏 ' + hid + '。';
+  const dm = (DM_GODS[c.dayStem] || {})[f.god];
+  const WITH = {year: '和年柱', month: '和月柱', day: '和日柱', hour: '和時柱', decade: '和大運', chart: '和命盤'};
+  const AREA = {year: '祖上、長輩', month: '父母、手足', day: '自己與伴侶', hour: '子女、晚輩', decade: '這十年的大環境', chart: ''};
+  const rels = f.relations.map(r => '<li><span class="rk rk-' + r.kind + '">' + KIND[r.kind] + '</span><b>' + r.text + '</b><small>' + WITH[r.with] + (r.with === 'decade' ? f.decade.text : r.with === 'chart' ? '' : c.pillars[r.with].text) + '・' + r.type + (AREA[r.with] ? '・' + AREA[r.with] : '') + '</small></li>').join('');
+  const kinds = [...new Set(f.relations.map(r => r.type))];
+  $('#flow-detail').innerHTML = '<p>' + Y + ' ' + f.text + '年（虛歲 ' + f.age + '）：流年天干「' + f.stem + '」是你的' + f.god + '，' + TEN_GOD[f.god] + (dm ? dm[1] : '') + '地支「' + f.branch + '」藏 ' + hid + '。</p>' +
+    '<h4>這一年和命盤的合沖刑害</h4>' + (rels ? '<ul class="frel">' + rels + '</ul>' + kinds.map(k => '<p class="muted"><b>' + k + '</b>：' + REL_INFO[k] + '</p>').join('')
+      : '<p class="muted">這一年的干支和四柱、大運之間，沒有明顯的合、沖、刑、害。</p>');
 }
 
 function renderSaved(){
