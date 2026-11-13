@@ -51,6 +51,76 @@ function trueSolar(t, lon){
   return {...fromMinutes(minutesOf(t.y, t.m, t.d, t.hour, t.minute) + shift), lonMin: Math.round(lonMin), eot: Math.round(eot), shift};
 }
 
+// ---------- 合沖刑害 ----------
+const KEYS = ['year', 'month', 'day', 'hour'];
+const SANHE = [[8, 0, 4, '水'], [11, 3, 7, '木'], [2, 6, 10, '火'], [5, 9, 1, '金']];   // 生、旺、墓
+const SANHUI = [[2, 3, 4, '木'], [5, 6, 7, '火'], [8, 9, 10, '金'], [11, 0, 1, '水']];
+function relations(stems, branches){
+  const out = [];
+  const add = (type, kind, idx, text) => out.push({type, kind, pillars: idx.map(i => KEYS[i]), text});
+  for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) {
+    const a = stems[i], b = stems[j], lo = Math.min(a, b), hi = Math.max(a, b);
+    if (a !== b && a % 5 === b % 5) add('天干五合', 'he', [i, j], STEMS[lo] + STEMS[hi] + '合' + ['土', '金', '水', '木', '火'][lo]);
+    if (hi - lo === 6) add('天干相沖', 'chong', [i, j], STEMS[lo] + STEMS[hi] + '沖');
+    const x = branches[i], y = branches[j], p = BRANCHES[x] + BRANCHES[y];
+    const q = BRANCHES[Math.min(x, y)] + BRANCHES[Math.max(x, y)];   // 慣用順序
+    if ((x + y) % 12 === 1) add('六合', 'he', [i, j], q + '合' + ({'01': '土', '211': '木', '310': '火', '49': '金', '58': '水'}[Math.min(x, y) + '' + Math.max(x, y)] || ''));
+    if (Math.abs(x - y) === 6) add('六沖', 'chong', [i, j], q + '沖');
+    if ((x + y) % 12 === 7) add('六害', 'hai', [i, j], q + '害');
+    if (x !== y && [[2, 5, 8], [1, 10, 7]].some(g => g.includes(x) && g.includes(y))) add('相刑', 'xing', [i, j], p + '刑');
+    if ((x === 0 && y === 3) || (x === 3 && y === 0)) add('相刑', 'xing', [i, j], p + '刑');
+    if (x === y && [4, 6, 9, 11].includes(x)) add('自刑', 'xing', [i, j], p + '自刑');
+  }
+  for (const [s, m, e, el] of SANHE) {
+    const has = [s, m, e].map(b => branches.includes(b));
+    if (has.every(Boolean)) add('三合', 'he', [0, 1, 2, 3].filter(i => [s, m, e].includes(branches[i])), BRANCHES[s] + BRANCHES[m] + BRANCHES[e] + '三合' + el + '局');
+    else for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) {
+      const x = branches[i], y = branches[j];
+      if (x !== y && (x === m || y === m) && [s, e].includes(x === m ? y : x)) add('半合', 'he', [i, j], BRANCHES[x] + BRANCHES[y] + '半合' + el + '局');
+    }
+  }
+  for (const [a, b, c2, el] of SANHUI)
+    if ([a, b, c2].every(z => branches.includes(z))) add('三會', 'he', [0, 1, 2, 3].filter(i => [a, b, c2].includes(branches[i])), BRANCHES[a] + BRANCHES[b] + BRANCHES[c2] + '三會' + el + '方');
+  return out;
+}
+
+// ---------- 神煞 ----------
+const TIANYI = {0: [1, 7], 4: [1, 7], 6: [1, 7], 1: [0, 8], 5: [0, 8], 2: [11, 9], 3: [11, 9], 8: [3, 5], 9: [3, 5], 7: [2, 6]};
+const WENCHANG = [5, 6, 8, 9, 8, 9, 11, 0, 2, 3];
+const LU = [2, 3, 5, 6, 5, 6, 8, 9, 11, 0];
+const YANGREN = {0: 3, 2: 6, 4: 6, 6: 9, 8: 0};   // 只取陽干
+const TIANDE = '巳庚丁申壬辛亥甲癸寅丙乙';        // 依月支（子起）
+const YUEDE = '壬庚丙甲';                          // 依月支三合：申子辰、巳酉丑、寅午戌、亥卯未
+const TRIAD = {桃花: [9, 6, 3, 0], 驛馬: [2, 11, 8, 5], 華蓋: [4, 1, 10, 7], 將星: [0, 9, 6, 3]};
+const KUIGANG = ['庚辰', '庚戌', '壬辰', '戊戌'];
+function shensha(stems, branches){
+  const out = [], seen = new Set();
+  const add = (name, i, by) => { const k = name + i; if (!seen.has(k)) { seen.add(k); out.push({name, pillar: KEYS[i], by}); } };
+  const ds = stems[2], yb = branches[0], db = branches[2], mb = branches[1];
+  for (let i = 0; i < 4; i++) {
+    const b = branches[i], st = stems[i];
+    if (TIANYI[ds].includes(b)) add('天乙貴人', i, '日干');
+    if (WENCHANG[ds] === b) add('文昌貴人', i, '日干');
+    if (LU[ds] === b) add('祿神', i, '日干');
+    if (YANGREN[ds] === b) add('羊刃', i, '日干');
+    if (TIANDE[mb] === STEMS[st] || TIANDE[mb] === BRANCHES[b]) add('天德貴人', i, '月支');
+    if (YUEDE[mb % 4] === STEMS[st]) add('月德貴人', i, '月支');
+    for (const [name, table] of Object.entries(TRIAD)) {
+      if (i !== 0 && table[yb % 4] === b) add(name, i, '年支');
+      if (i !== 2 && table[db % 4] === b) add(name, i, '日支');
+    }
+    if (i !== 0) {
+      if (mod(3 - yb, 12) === b) add('紅鸞', i, '年支');
+      if (mod(9 - yb, 12) === b) add('天喜', i, '年支');
+      const season = Math.floor(((yb + 1) % 12) / 3);
+      if ([2, 5, 8, 11][season] === b) add('孤辰', i, '年支');
+      if ([10, 1, 4, 7][season] === b) add('寡宿', i, '年支');
+    }
+  }
+  if (KUIGANG.includes(STEMS[ds] + BRANCHES[db])) add('魁罡', 2, '日柱');
+  return out;
+}
+
 function pillar(i, dayStem, isDay){
   const s = i % 10, b = i % 12;
   return {
@@ -129,6 +199,8 @@ function chart(input){
     input: {...input, lateZi},
     year, yang, forward, gender, pillars, dayStem: STEMS[dayStem], dayEl: ELEMENTS[STEM_EL[dayStem]],
     kong: kong.map(b => BRANCHES[b]), count,
+    relations: relations(KEYS.map(k => pillars[k].stemIndex), KEYS.map(k => pillars[k].branchIndex)),
+    shensha: shensha(KEYS.map(k => pillars[k].stemIndex), KEYS.map(k => pillars[k].branchIndex)),
     jie: {name: jie[k].name, t: jie[k].t},
     luck: {start, years: Math.floor(totalMonths / 12), months: totalMonths % 12, target: target.name, decades},
     lateShift: late && lateZi === 'next',
@@ -142,6 +214,6 @@ function flowYear(c, Y){
   return {...pillar(i, ds), year: Y, age: Y - c.year + 1, decade};
 }
 
-const api = {STEMS, BRANCHES, ELEMENTS, HIDDEN, NAYIN, tenGod, chart, flowYear, trueSolar, equationOfTime, hourBranch, gz, FIRST, LAST, jieList};
+const api = {relations, shensha, STEMS, BRANCHES, ELEMENTS, HIDDEN, NAYIN, tenGod, chart, flowYear, trueSolar, equationOfTime, hourBranch, gz, FIRST, LAST, jieList};
 if (typeof module !== 'undefined') module.exports = api; else g.Sishi = api;
 })(this);
